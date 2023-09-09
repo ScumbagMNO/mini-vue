@@ -3,7 +3,6 @@ import { createComponentInstance, setupComponent } from './components'
 
 export function render(vnode, container) {
   // patch
-  //
   patch(vnode, container)
 }
 
@@ -30,8 +29,7 @@ function processComponent(vnode: any, container: any) {
 }
 
 function mountElement(vnode: any, container: any) {
-  const el = document.createElement(vnode.type)
-
+  const el = (vnode.el = document.createElement(vnode.type))
   //  string  array
   const { children } = vnode
   if (typeof children === 'string') {
@@ -56,18 +54,23 @@ function mountChildren(vnode, container) {
   })
 }
 
-function mountComponent(vnode: any, container) {
+function mountComponent(initialVnode: any, container) {
   // 创建组件实例
-  const instance = createComponentInstance(vnode)
+  const instance = createComponentInstance(initialVnode)
 
   setupComponent(instance)
 
-  setupRenderEffect(instance, container)
+  setupRenderEffect(instance, initialVnode, container)
 }
 
-function setupRenderEffect(instance: any, container) {
-  const subTree = instance.render()
+function setupRenderEffect(instance: any, initialVnode, container) {
+  const { proxy } = instance
+  const subTree = instance.render.call(proxy)
   // vnode 树 -> patch
   // vnode -> element -> mountElement
   patch(subTree, container)
+  // 结束了此组件所有element -> mount
+
+  // 此时的vode是component上的vnode subTree是处理过的element所vnode
+  initialVnode.el = subTree.el
 }
