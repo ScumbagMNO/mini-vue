@@ -49,7 +49,7 @@ function mountElement(vnode: any, container: any) {
   const { props } = vnode
   for (const key in props) {
     const val = props[key]
-    console.log(key)
+    // console.log(key)
     // 具体的click
     // 规范 on + Event name
     const isOn = (key: string) => /^on[A-Z]/.test(key)
@@ -81,11 +81,11 @@ function mountComponent(initialVnode: any, container) {
 function setupRenderEffect(instance: any, initialVnode, container) {
   const { proxy } = instance
   const subTree = instance.render.call(proxy)
-  // vnode 树 -> patch
+  // vnode subTree -> patch
   // vnode -> element -> mountElement
   patch(subTree, container)
-  // 结束了此组件所有element -> mount
 
-  // 此时的vode是component上的vnode subTree是处理过的element所vnode
+  // 结束了此组件所有element -> mount
+  // 此时的vode是component上的vnode subTree是处理过的element所变为的vnode
   initialVnode.el = subTree.el
 }

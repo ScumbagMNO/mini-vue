@@ -14,17 +14,20 @@ export const App = {
       {
         id: 'root',
         class: ['red', 'hard'],
-        onClick() {
-          console.log('click')
-        },
-        onMouseEnter() {
-          console.log('onMouseEnter')
-        },
       },
-      [h('div', {}, 'hi' + this.msg), h(Foo, { count: 2 })]
-      // 'hi , mini-vue'
-      // Array
-      // [h('p', { class: ['red'] }, 'hi'), h('p', { class: ['blue'] }, this.msg)]
+      [
+        h('div', {}, 'hi' + this.msg),
+        h(Foo, {
+          // on + Event
+          onAdd(a, b) {
+            console.log('onAdd', a, b)
+          },
+          // add-foo -> AddFoo
+          onAddFoo() {
+            console.log('onAddFoo')
+          },
+        }),
+      ]
     )
   },
 

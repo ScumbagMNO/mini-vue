@@ -42,7 +42,7 @@ export const readonlyHandlers = {
   get: readonlyGet,
   set(target, key) {
     // throw
-    console.warn(`key:${key} set faile because target is`)
+    console.warn(`key:${key} set faile because target is readOnly`)
     return true
   },
 }
