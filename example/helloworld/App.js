@@ -13,6 +13,12 @@ export const App = {
       {
         id: 'root',
         class: ['red', 'hard'],
+        onClick() {
+          console.log('click')
+        },
+        onMouseEnter() {
+          console.log('onMouseEnter')
+        },
       },
       // 'hi , mini-vue'
       // Array
