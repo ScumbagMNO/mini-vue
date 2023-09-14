@@ -17,6 +17,7 @@ export const App = {
       },
       [
         h('div', {}, 'hi' + this.msg),
+
         h(Foo, {
           // on + Event
           onAdd(a, b) {

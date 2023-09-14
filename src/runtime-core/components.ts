@@ -1,18 +1,18 @@
 import { shallowReadonly } from '../reactivity/reactive'
-import { initProps } from './componenetProps'
+import { initProps } from './componentProps'
 import { emit } from './componentEmit'
 import { PublicInstanceProxyHandlers } from './componentPublicInstance'
+import { initSlots } from './componentSlots'
 
 export function createComponentInstance(vnode) {
-  const component = { vnode, type: vnode.type, setupState: {}, props: {}, emit: () => {} }
+  const component = { vnode, type: vnode.type, setupState: {}, props: {}, slots: {}, emit: () => {} }
   component.emit = emit.bind(null, component) as any
-  console.log(component)
   return component
 }
 
 export function setupComponent(instance) {
   initProps(instance, instance.vnode.props)
-  // initSlots()
+  initSlots(instance, instance.vnode.children)
   setupStatefulComponent(instance)
 }
 
@@ -21,10 +21,14 @@ function setupStatefulComponent(instance: any) {
   const { setup } = instance.type
   // ctx
   instance.proxy = new Proxy({ _: instance }, PublicInstanceProxyHandlers)
+
   if (setup) {
+    setCurrentInstance(instance)
     const setupResult = setup(shallowReadonly(instance.props), {
       emit: instance.emit,
     })
+    setCurrentInstance(null)
+
     handlerSetupResult(instance, setupResult)
   }
 }
@@ -41,4 +45,14 @@ function handlerSetupResult(instance, setupResult: any) {
 function finishComponentSetup(instance: any) {
   const Component = instance.type
   instance.render = Component.render
+}
+
+let currentInstance = null
+
+export function getCurrentInstance() {
+  return currentInstance
+}
+
+export function setCurrentInstance(instance: any) {
+  currentInstance = instance
 }
