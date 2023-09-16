@@ -14,12 +14,12 @@ export const App = {
       {
         id: 'root',
         class: ['red', 'hard'],
-        onClick() {
-          console.log('click')
-        },
-        onMouseEnter() {
-          console.log('onMouseEnter')
-        },
+        // onClick() {
+        //   console.log('click')
+        // },
+        // onMouseEnter() {
+        //   console.log('onMouseEnter')
+        // },
       },
       [h('div', {}, 'hi' + this.msg), h(Foo, { count: 2 })]
       // 'hi , mini-vue'
