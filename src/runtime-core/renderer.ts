@@ -27,7 +27,7 @@ Text 是渲染成 TextNode而非 html标签Node
 
 */
 export function createRenderer(options) {
-  const { createElement: hostCreateElement, patchProp: hostPatchProp, insert: hostInsert } = options
+  const { createElement: hostCreateElement, patchProp: hostPatchProp, insert: hostInsert, remove: hostRemove, setElementText: hostSetElementText } = options
   function render(vnode, container) {
     // patch 处理 传进来的vnode 和 将其挂载的父节点
     patch(null, vnode, container, null)
@@ -62,7 +62,7 @@ export function createRenderer(options) {
   }
 
   function processFragement(n1, n2: any, container: any, parentComponent) {
-    mountChildren(n2, container, parentComponent)
+    mountChildren(n2.children, container, parentComponent)
   }
 
   function processText(n1, n2: any, container: any) {
@@ -75,21 +75,51 @@ export function createRenderer(options) {
     if (!n1) {
       mountElement(n2, container, parentComponent)
     } else {
-      patchElement(n1, n2, container)
+      patchElement(n1, n2, container, parentComponent)
     }
   }
 
-  function patchElement(n1, n2, container) {
-    console.log('patchElement---')
-
-    console.log('n1', n1)
-    console.log('n2', n2)
+  function patchElement(n1, n2, container, parentComponent) {
+    // console.log('patchElement---')
+    // console.log('n1', n1)
+    // console.log('n2', n2)
     // 需对比新旧结点的props 和 children
     const oldProps = n1.props || EMPTY_OBJ
     const newProps = n2.props || EMPTY_OBJ
 
     const el = (n2.el = n1.el)
+
+    patchChildren(n1, n2, el, parentComponent)
     patchProps(el, oldProps, newProps)
+  }
+
+  function patchChildren(n1, n2, container, parentComponent) {
+    const { shapeFlag: prevShapeFlag, children: c1 } = n1
+    const { shapeFlag: nextShapFlag, children: c2 } = n2
+
+    if (nextShapFlag & ShapeFlags.TEXT_CHILDREN) {
+      if (prevShapeFlag & ShapeFlags.ARRAY_CHILDREN) {
+        // 1.把老的children清空
+        unmountChildren(n1.children)
+      }
+      // 2.设置为新的 text
+      if (c1 !== c2) {
+        hostSetElementText(container, c2)
+      }
+    } else {
+      if (prevShapeFlag & ShapeFlags.TEXT_CHILDREN) {
+        hostSetElementText(container, '')
+        mountChildren(c2, container, parentComponent)
+      }
+    }
+  }
+
+  function unmountChildren(children) {
+    for (let i = 0; i < children.length; i++) {
+      const el = children[i].el
+      // remove
+      hostRemove(el)
+    }
   }
 
   function patchProps(el, oldProps, newProps) {
@@ -127,7 +157,7 @@ export function createRenderer(options) {
       el.textContent = children
     } else if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
       //  array_children
-      mountChildren(vnode, el, parentComponent)
+      mountChildren(vnode.children, el, parentComponent)
     }
 
     // props
@@ -140,8 +170,8 @@ export function createRenderer(options) {
     hostInsert(el, container)
   }
 
-  function mountChildren(vnode, container, parentComponent) {
-    vnode.children.forEach((v) => {
+  function mountChildren(children, container, parentComponent) {
+    children.forEach((v) => {
       patch(null, v, container, parentComponent)
     })
   }
@@ -157,12 +187,9 @@ export function createRenderer(options) {
 
   function setupRenderEffect(instance: any, initialVnode, container) {
     effect(() => {
-      console.log(instance)
-
       if (!instance.isMounted) {
         const { proxy } = instance
         const subTree = (instance.subTree = instance.render.call(proxy))
-        console.log(subTree)
         // vnode subTree -> patch
         // vnode -> element -> mountElement
         patch(null, subTree, container, instance)
