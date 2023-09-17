@@ -21,6 +21,7 @@ class RefImpl {
   }
   get value() {
     trackRefValue(this)
+
     return this._value
   }
   set value(newVal) {
