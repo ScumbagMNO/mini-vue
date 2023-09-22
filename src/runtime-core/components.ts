@@ -15,15 +15,18 @@ export function createComponentInstance(vnode, parent) {
     slots: {},
     provides: parent ? parent.provides : {},
     parent,
+
     subTree: {},
     isMounted: false,
-    emit: () => {},
+    emit: () => {}
   }
   component.emit = emit.bind(null, component) as any
   return component
 }
 
 export function setupComponent(instance) {
+  // console.log(instance)
+
   initProps(instance, instance.vnode.props)
   initSlots(instance, instance.vnode.children)
   setupStatefulComponent(instance)
@@ -37,8 +40,9 @@ function setupStatefulComponent(instance: any) {
 
   if (setup) {
     setCurrentInstance(instance)
+    // 把传入的props传入setup
     const setupResult = setup(shallowReadonly(instance.props), {
-      emit: instance.emit,
+      emit: instance.emit
     })
     setCurrentInstance(null)
 

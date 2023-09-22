@@ -23,6 +23,7 @@ class ComputedRefImpl {
     return this._value
   }
 }
+
 export function computed(getter) {
   return new ComputedRefImpl(getter)
 }

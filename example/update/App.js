@@ -33,9 +33,7 @@ export const App = {
       onChangePropsDemo3,
     }
   },
-  // .vue
-  // <template></template> 暂时无法 必须有render
-  // render
+
   render() {
     console.log(this.props)
     return h(

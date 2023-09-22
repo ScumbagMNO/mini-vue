@@ -8,6 +8,7 @@ export function createVNode(type, props?, children?) {
     type,
     props,
     children,
+    key: props && props.key,
     shapeFlag: getShapeFlag(type),
     el: null,
   }
@@ -23,7 +24,6 @@ export function createVNode(type, props?, children?) {
       vnode.shapeFlag |= ShapeFlags.SLOT_CHILDREN
     }
   }
-
   return vnode
 }
 
