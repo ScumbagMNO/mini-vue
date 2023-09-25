@@ -22,7 +22,9 @@ function patchProp(el, key, prevValue, nextValue) {
 }
 
 function insert(child, parent, anchor) {
+  // anchor 为dom元素
   // parent.append(el)
+  // console.log('child, parent, anchor: ', child, parent, anchor)
   parent.insertBefore(child, anchor || null)
 }
 
@@ -42,7 +44,7 @@ const renderer: any = createRenderer({
   patchProp,
   insert,
   remove,
-  setElementText,
+  setElementText
 })
 
 export function createApp(...args) {

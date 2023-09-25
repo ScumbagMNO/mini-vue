@@ -122,7 +122,6 @@ export function createRenderer(options) {
       }
     }
   }
-
   function patchKeyedChildren(c1, c2, container, parentComponent, parentAnchor) {
     let i = 0
     const l2 = c2.length
@@ -153,11 +152,10 @@ export function createRenderer(options) {
       }
       e1--
       e2--
-      console.log('e1,e2: ', e1, e2)
     }
 
-    // 新的比老的多 创建
     if (i > e1) {
+      // 新的比老的多
       if (i <= e2) {
         const nextPos = e2 + 1
         // 判断是左侧添加还是右侧添加
@@ -168,25 +166,37 @@ export function createRenderer(options) {
         }
       }
     } else if (i > e2) {
+      // 新的比老的少
       while (i <= e1) {
         hostRemove(c1[i].el)
         i++
       }
     } else {
+      // 此处求出中间乱序部分
       //   i<e1 i <e2
       let s1 = i
       let s2 = i
-
       // 记录新的结点总数
       const toBePatched = e2 - s2 + 1
       let patched = 0
+      // 建立key映射表
       const keyToNewIndexMap = new Map()
-      // 建立映射表
+      const newIndexToOldIndexMap = new Array(toBePatched).fill(0)
+      let moved = false
+      let maxNewIndexSoFar = 0
+
+      // for (let i = 0; i < toBePatched; i++) {
+      //   newIndexToOldIndexMap[i] = 0
+      // }
+
       for (let i = s2; i <= e2; i++) {
         const nextChild = c2[i]
         keyToNewIndexMap.set(nextChild.key, i)
       }
 
+      // 对旧的和新的乱序部分 进行遍历
+      // 对旧的进行遍历 是为了找出旧的在新的中是否存在 不存在则删除 存在则更新
+      // key的存在意义主要是为了更快的找到新的位置
       for (let i = s1; i <= e1; i++) {
         const preChild = c1[i]
         let newIndex
@@ -198,6 +208,7 @@ export function createRenderer(options) {
         if (preChild.key !== null) {
           newIndex = keyToNewIndexMap.get(preChild.key)
         } else {
+          // 旧节点无key的情况下
           for (let j = s2; j < e2; j++) {
             if (isSomeVNodeType(preChild, c2[j])) {
               newIndex = j
@@ -205,22 +216,49 @@ export function createRenderer(options) {
             }
           }
         }
+
         if (newIndex === undefined) {
           hostRemove(preChild.el)
         } else {
+          if (newIndex >= maxNewIndexSoFar) {
+            maxNewIndexSoFar = newIndex
+          } else {
+            moved = true
+          }
+          // 老的在新的仍然存在 此处只做了更新没有做移动 并且记录其在旧序列中的索引
+          newIndexToOldIndexMap[newIndex - s2] = i + 1
           patch(preChild, c2[newIndex], container, parentComponent, null)
           patched++
         }
       }
-    }
 
-    // 乱序部分 创建新的 删除老的 移动
+      // 获取在新的序序中 旧的对应最长递增子序列
+      const increasingNewIndexSequence = moved ? getSequence(newIndexToOldIndexMap) : []
+
+      //对新的序列中间乱序部分进行遍历
+      let j = increasingNewIndexSequence.length - 1
+      for (let i = toBePatched - 1; i >= 0; i--) {
+        const nextIndex = i + s2
+        const nextChild = c2[nextIndex]
+        const anchor = nextIndex + 1 < l2 ? c2[nextIndex + 1].el : null
+        if (newIndexToOldIndexMap[i] === 0) {
+          patch(null, nextChild, container, parentComponent, anchor)
+        } else if (moved) {
+          if (j < 0 || i !== increasingNewIndexSequence[j]) {
+            hostInsert(nextChild.el, container, anchor)
+            console.log('移动位置')
+          } else {
+            j--
+          }
+        }
+      }
+    }
   }
 
   function isSomeVNodeType(n1, n2) {
     // type
     // key
-    console.log(n1, n2)
+    // console.log(n1, n2)
     return n1.type === n2.type && n1.key === n2.key
   }
 
@@ -327,7 +365,7 @@ export function createRenderer(options) {
         // vnode -> element -> mountElement
         patch(prevSubTree, subTree, container, instance, anchor)
         // 结束了此组件所有element -> mount
-        // 此时的vode是component上的vnode subTree是处理过的element所变为的vnode
+        // 此时的vnode是component上的vnode subTree是处理过的element所变为的vnode
         initialVnode.el = subTree.el
         instance.isMounted = true
       }
@@ -337,4 +375,60 @@ export function createRenderer(options) {
   return {
     createApp: createAppAPI(render)
   }
+}
+function getSequence(arr) {
+  // 复制一份arr
+  const p = arr.slice()
+  const result = [0]
+  // i: 当前遍历的索引 j: result最后一个值的索引 u: 二分查找的起始索引 v: 二分查找的结束索引 c: 二分查找的中间索引
+  let i, j, u, v, c
+  const len = arr.length
+  for (i = 0; i < len; i++) {
+    // 二分查找 arr[result[j]] < arr[i]  找到第一个大于arr[i]的值
+    const arrI = arr[i]
+
+    if (arrI !== 0) {
+      // result最后一个值的索引
+      j = result[result.length - 1]
+      // 如果arr[j] < arr[i] 直接插入到result的最后
+
+      console.log(arr[j], arrI)
+      if (arr[j] < arrI) {
+        // 获取最后一个值的索引
+        p[i] = j
+        result.push(i)
+        continue
+      }
+
+      u = 0
+      v = result.length - 1
+
+      // 遍历result
+      while (u < v) {
+        // 二分查找
+        c = (u + v) >> 1
+
+        // 如果arr[result[c]] < arr[i] 说明arr[i]的值在result[c]的右边
+        if (arr[result[c]] < arrI) {
+          u = c + 1
+        } else {
+          v = c
+        }
+      }
+      if (arrI < arr[result[u]]) {
+        if (u > 0) {
+          p[i] = result[u - 1]
+        }
+
+        result[u] = i
+      }
+    }
+  }
+  u = result.length
+  v = result[u - 1]
+  while (u-- > 0) {
+    result[u] = v
+    v = p[v]
+  }
+  return result
 }
