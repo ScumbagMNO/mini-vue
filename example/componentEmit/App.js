@@ -13,11 +13,12 @@ export const App = {
       'div',
       {
         id: 'root',
-        class: ['red', 'hard'],
+        class: ['red', 'hard']
       },
       [
         h('div', {}, 'hi' + this.msg),
 
+        // 此时通过emit更新子组件的props，而非直接修改props
         h(Foo, {
           // on + Event
           onAdd(a, b) {
@@ -26,8 +27,8 @@ export const App = {
           // add-foo -> AddFoo
           onAddFoo() {
             console.log('onAddFoo')
-          },
-        }),
+          }
+        })
       ]
     )
   },
@@ -35,7 +36,7 @@ export const App = {
   setup() {
     // composition api
     return {
-      msg: 'mini-vue haha',
+      msg: 'mini-vue haha'
     }
-  },
+  }
 }

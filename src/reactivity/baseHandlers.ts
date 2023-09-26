@@ -1,5 +1,5 @@
 import { extend, isObject } from '../shared/index'
-import { track, trggier } from './effect'
+import { track, trigger } from './effect'
 import { ReactiveFlags, reactive, readonly } from './reactive'
 
 const get = createGetter()
@@ -29,13 +29,13 @@ function createSetter() {
   return function set(target, key, val) {
     const res = Reflect.set(target, key, val)
     //  触发依赖
-    trggier(target, key)
+    trigger(target, key)
     return res
   }
 }
-export const mutalbleHandlers = {
+export const mutableHandlers = {
   get,
-  set,
+  set
 }
 
 export const readonlyHandlers = {
@@ -44,9 +44,9 @@ export const readonlyHandlers = {
     // throw
     console.warn(`key:${key} set faile because target is readOnly`)
     return true
-  },
+  }
 }
 
 export const shallowReadonlyHandlers = extend({}, readonlyHandlers, {
-  get: shallowReadonlyGet,
+  get: shallowReadonlyGet
 })

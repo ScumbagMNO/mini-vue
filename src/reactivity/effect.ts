@@ -17,13 +17,11 @@ export class ReactiveEffect {
   run() {
     activeEffect = this
     if (!this.active) return this._fn()
-
     // shouldTrack 来做区分
     shouldTrack = true
     const result = this._fn()
     // reset 使其只在active时主动收集此effect
     shouldTrack = false
-
     return result
   }
   stop() {
@@ -69,7 +67,7 @@ export function isTracking() {
   return shouldTrack && activeEffect !== undefined
 }
 
-export function trggier(target, key) {
+export function trigger(target, key) {
   let depsMap = targetMap.get(target)
   let dep = depsMap.get(key)
   triggerEffects(dep)

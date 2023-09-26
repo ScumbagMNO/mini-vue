@@ -4,7 +4,6 @@ window.self = null
 export const App = {
   name: 'App',
   render() {
-    console.log(this)
     return h('div', {}, [
       h('div', {}, '你好'),
       h('button', { onClick: this.changeChildProps }, 'change child props'),
@@ -18,9 +17,9 @@ export const App = {
     // composition api
     const msg = ref(123)
     const count = ref(1)
-    window.msg = msg
+    // window.msg = msg
     const changeChildProps = () => {
-      msg.value = 'haha'
+      msg.value = 789
     }
     const add = () => {
       count.value++

@@ -4,6 +4,7 @@ import { ShapeFlags } from '../shared/ShapeFlags'
 import { shouldUpdateComponent } from './componentUpdateUtils'
 import { createComponentInstance, setupComponent } from './components'
 import { createAppAPI } from './createApp'
+import { queueJobs } from './scheduler'
 import { Fragment, Text } from './vnode'
 
 /* 
@@ -48,7 +49,7 @@ export function createRenderer(options) {
     // Fragment -> 只渲染 children
     switch (type) {
       case Fragment:
-        processFragement(n1, n2, container, parentComponent, anchor)
+        processFragment(n1, n2, container, parentComponent, anchor)
         break
       case Text:
         processText(n1, n2, container)
@@ -67,7 +68,7 @@ export function createRenderer(options) {
     }
   }
 
-  function processFragement(n1, n2: any, container: any, parentComponent, anchor) {
+  function processFragment(n1, n2: any, container: any, parentComponent, anchor) {
     mountChildren(n2.children, container, parentComponent, anchor)
   }
 
@@ -86,16 +87,14 @@ export function createRenderer(options) {
   }
 
   function patchElement(n1, n2, container, parentComponent, anchor) {
-    // console.log('patchElement---')
-    // console.log('n1', n1)
-    // console.log('n2', n2)
+    console.log('patchElement---')
+    console.log('n1', n1)
+    console.log('n2', n2)
     // 需对比新旧结点的props 和 children
-
     const oldProps = n1.props || EMPTY_OBJ
     const newProps = n2.props || EMPTY_OBJ
 
     const el = (n2.el = n1.el)
-
     patchChildren(n1, n2, el, parentComponent, anchor)
     patchProps(el, oldProps, newProps)
   }
@@ -141,7 +140,6 @@ export function createRenderer(options) {
       }
       i++
     }
-    console.log('i:', i)
 
     // 右侧指针
     while (i <= e1 && i <= e2) {
@@ -271,6 +269,7 @@ export function createRenderer(options) {
   }
 
   function patchProps(el, oldProps, newProps) {
+    // 更新的为element中的props
     if (oldProps !== newProps) {
       // 遍历新的 更新props
       for (const key in newProps) {
@@ -301,11 +300,13 @@ export function createRenderer(options) {
 
   function updateComponent(n1, n2) {
     const instance = (n2.component = n1.component)
-
+    // 是否需要更新component
     if (shouldUpdateComponent(n1, n2)) {
+      //  需要更新
       instance.next = n2
       instance.update()
     } else {
+      // 不需要更新 但是需要更新vnode
       n2.el = n1.el
       instance.vnode = n2
     }
@@ -350,52 +351,55 @@ export function createRenderer(options) {
 
     // 挂载setupState props $slots emit $el等
     setupComponent(instance)
-
     setupRenderEffect(instance, initialVnode, container, anchor)
   }
 
   function setupRenderEffect(instance: any, initialVnode, container, anchor) {
-    instance.update = effect(() => {
-      // patch上会取到 setupState上的值因此会监听触发effect
-      if (!instance.isMounted) {
-        const { proxy } = instance
+    instance.update = effect(
+      () => {
+        // patch上会取到 setupState上的值因此会监听触发effect，render中会使用到,因此会触发effect追踪
+        if (!instance.isMounted) {
+          const { proxy } = instance
+          // 此时出来的是element节点
+          const subTree = (instance.subTree = instance.render.call(proxy))
+          // vnode subTree -> patch
 
-        // 此时出来的是element节点
-        const subTree = (instance.subTree = instance.render.call(proxy))
-        // vnode subTree -> patch
+          // vnode -> element -> mountElement
+          patch(null, subTree, container, instance, anchor)
+          // 结束了此组件所有element -> mount
 
-        // vnode -> element -> mountElement
-        patch(null, subTree, container, instance, anchor)
-        // 结束了此组件所有element -> mount
+          // 此时的vnode是component上的vnode subTree是处理过的element所变为的vnode
+          initialVnode.el = subTree.el
+          instance.isMounted = true
+        } else {
+          // console.log('update')
 
-        // 此时的vode是component上的vnode subTree是处理过的element所变为的vnode
-        initialVnode.el = subTree.el
-
-        instance.isMounted = true
-      } else {
-        console.log('update')
-        // 需要一个 vnode
-        const { next, vnode } = instance
-
-        if (next) {
-          next.el = vnode.el
-          updateComponentPreRender(instance, next)
+          // 需要一个 vnode
+          const { next, vnode } = instance
+          if (next) {
+            next.el = vnode.el
+            // 更新props
+            updateComponentPreRender(instance, next)
+          }
+          const { proxy } = instance
+          const subTree = instance.render.call(proxy)
+          const prevSubTree = instance.subTree
+          instance.subTree = subTree
+          // vnode subTree -> patch
+          // vnode -> element -> mountElement | patchElement
+          patch(prevSubTree, subTree, container, instance, anchor)
+          // 结束了此组件所有element -> mount
+          // 此时的vnode是component上的vnode subTree是处理过的element所变为的vnode
+          initialVnode.el = subTree.el
         }
-
-        const { proxy } = instance
-        const subTree = instance.render.call(proxy)
-        const prevSubTree = instance.subTree
-
-        instance.subTree = subTree
-        // vnode subTree -> patch
-        // vnode -> element -> mountElement
-        patch(prevSubTree, subTree, container, instance, anchor)
-        // 结束了此组件所有element -> mount
-        // 此时的vnode是component上的vnode subTree是处理过的element所变为的vnode
-        initialVnode.el = subTree.el
-        instance.isMounted = true
+      },
+      {
+        scheduler() {
+          console.log('update - scheduler')
+          queueJobs(instance.update)
+        }
       }
-    })
+    )
   }
 
   return {
@@ -425,7 +429,7 @@ function getSequence(arr) {
       j = result[result.length - 1]
       // 如果arr[j] < arr[i] 直接插入到result的最后
 
-      console.log(arr[j], arrI)
+      // console.log(arr[j], arrI)
       if (arr[j] < arrI) {
         // 获取最后一个值的索引
         p[i] = j
