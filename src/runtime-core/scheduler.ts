@@ -1,7 +1,8 @@
 const queue: any[] = []
+const p = Promise.resolve()
 
 export function nextTick(fn) {
-  return fn ? Promise.resolve().then(fn) : Promise.resolve()
+  return fn ? p.then(fn) : p
 }
 
 let isFlushPending = false
