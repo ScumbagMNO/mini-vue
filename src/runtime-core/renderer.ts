@@ -1,6 +1,7 @@
 import { effect } from '../reactivity/effect'
 import { EMPTY_OBJ } from '../shared'
 import { ShapeFlags } from '../shared/ShapeFlags'
+import { shouldUpdateComponent } from './componentUpdateUtils'
 import { createComponentInstance, setupComponent } from './components'
 import { createAppAPI } from './createApp'
 import { Fragment, Text } from './vnode'
@@ -122,6 +123,7 @@ export function createRenderer(options) {
       }
     }
   }
+
   function patchKeyedChildren(c1, c2, container, parentComponent, parentAnchor) {
     let i = 0
     const l2 = c2.length
@@ -153,7 +155,6 @@ export function createRenderer(options) {
       e1--
       e2--
     }
-
     if (i > e1) {
       // 新的比老的多
       if (i <= e2) {
@@ -209,14 +210,13 @@ export function createRenderer(options) {
           newIndex = keyToNewIndexMap.get(preChild.key)
         } else {
           // 旧节点无key的情况下
-          for (let j = s2; j < e2; j++) {
+          for (let j = s2; j <= e2; j++) {
             if (isSomeVNodeType(preChild, c2[j])) {
               newIndex = j
               break
             }
           }
         }
-
         if (newIndex === undefined) {
           hostRemove(preChild.el)
         } else {
@@ -292,7 +292,23 @@ export function createRenderer(options) {
   }
 
   function processComponent(n1, n2: any, container: any, parentComponent, anchor) {
-    mountComponent(n2, container, parentComponent, anchor)
+    if (!n1) {
+      mountComponent(n2, container, parentComponent, anchor)
+    } else {
+      updateComponent(n1, n2)
+    }
+  }
+
+  function updateComponent(n1, n2) {
+    const instance = (n2.component = n1.component)
+
+    if (shouldUpdateComponent(n1, n2)) {
+      instance.next = n2
+      instance.update()
+    } else {
+      n2.el = n1.el
+      instance.vnode = n2
+    }
   }
 
   function mountElement(vnode: any, container: any, parentComponent, anchor) {
@@ -327,7 +343,10 @@ export function createRenderer(options) {
 
   function mountComponent(initialVnode: any, container, parentComponent, anchor) {
     // 创建组件实例
-    const instance = createComponentInstance(initialVnode, parentComponent)
+    const instance = (initialVnode.component = createComponentInstance(
+      initialVnode,
+      parentComponent
+    ))
 
     // 挂载setupState props $slots emit $el等
     setupComponent(instance)
@@ -336,7 +355,7 @@ export function createRenderer(options) {
   }
 
   function setupRenderEffect(instance: any, initialVnode, container, anchor) {
-    effect(() => {
+    instance.update = effect(() => {
       // patch上会取到 setupState上的值因此会监听触发effect
       if (!instance.isMounted) {
         const { proxy } = instance
@@ -355,8 +374,15 @@ export function createRenderer(options) {
         instance.isMounted = true
       } else {
         console.log('update')
-        const { proxy } = instance
+        // 需要一个 vnode
+        const { next, vnode } = instance
 
+        if (next) {
+          next.el = vnode.el
+          updateComponentPreRender(instance, next)
+        }
+
+        const { proxy } = instance
         const subTree = instance.render.call(proxy)
         const prevSubTree = instance.subTree
 
@@ -376,6 +402,13 @@ export function createRenderer(options) {
     createApp: createAppAPI(render)
   }
 }
+
+function updateComponentPreRender(instance, nextVNode) {
+  instance.vnode = nextVNode
+  instance.next = null
+  instance.props = nextVNode.props
+}
+
 function getSequence(arr) {
   // 复制一份arr
   const p = arr.slice()

@@ -154,26 +154,41 @@ import { ref, h } from '../../lib/guide-mini-vue.esm.js'
 // 综合例子
 // a b (c d e z) f g
 // a b (d c y e) f g
+// const prevChildren = [
+//   h('p', { key: 'A' }, 'A'),
+//   h('p', { key: 'B' }, 'B'),
+//   h('p', { key: 'C' }, 'C'),
+//   h('p', { key: 'D' }, 'D'),
+//   h('p', { key: 'E' }, 'E'),
+//   h('p', { key: 'Z' }, 'Z'),
+//   h('p', { key: 'F' }, 'F'),
+//   h('p', { key: 'G' }, 'G')
+// ]
+
+// const nextChildren = [
+//   h('p', { key: 'A' }, 'A'),
+//   h('p', { key: 'B' }, 'B'),
+//   h('p', { key: 'D' }, 'D'),
+//   h('p', { key: 'C' }, 'C'),
+//   h('p', { key: 'Y' }, 'Y'),
+//   h('p', { key: 'E' }, 'E'),
+//   h('p', { key: 'F' }, 'F'),
+//   h('p', { key: 'G' }, 'G')
+// ]
+
+// fix c节点应该是移动到d节点的前面 而不是删除掉
 const prevChildren = [
   h('p', { key: 'A' }, 'A'),
+  h('p', {}, 'C'),
   h('p', { key: 'B' }, 'B'),
-  h('p', { key: 'C' }, 'C'),
-  h('p', { key: 'D' }, 'D'),
-  h('p', { key: 'E' }, 'E'),
-  h('p', { key: 'Z' }, 'Z'),
-  h('p', { key: 'F' }, 'F'),
-  h('p', { key: 'G' }, 'G')
+  h('p', { key: 'D' }, 'D')
 ]
 
 const nextChildren = [
   h('p', { key: 'A' }, 'A'),
   h('p', { key: 'B' }, 'B'),
-  h('p', { key: 'D' }, 'D'),
-  h('p', { key: 'C' }, 'C'),
-  h('p', { key: 'Y' }, 'Y'),
-  h('p', { key: 'E' }, 'E'),
-  h('p', { key: 'F' }, 'F'),
-  h('p', { key: 'G' }, 'G')
+  h('p', {}, 'D'),
+  h('p', { key: 'D' }, 'D')
 ]
 
 export default {
