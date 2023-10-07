@@ -153,6 +153,7 @@ export function createRenderer(options) {
       e1--
       e2--
     }
+
     if (i > e1) {
       // 新的比老的多
       if (i <= e2) {
