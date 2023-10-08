@@ -109,7 +109,7 @@ function startWithEndTagOpen(source, tag) {
 function parseTag(context: any, type: TagType) {
   // 1.解析tag
   const match: any = /^<\/?([a-z]*)/i.exec(context.source)
-  console.log('match: ', match)
+  // console.log('match: ', match)
   const tag = match[1]
 
   // 2.删除处理完成的代码
