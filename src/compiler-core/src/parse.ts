@@ -164,7 +164,7 @@ function advanceBy(context: any, length: number) {
 }
 
 function createRoot(children) {
-  return { children }
+  return { children, type: NodeTypes.ROOT }
 }
 
 function createParseContext(content: string): any {
