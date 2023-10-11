@@ -361,8 +361,10 @@ export function createRenderer(options) {
         // patch上会取到 setupState上的值因此会监听触发effect，render中会使用到,因此会触发effect追踪
         if (!instance.isMounted) {
           const { proxy } = instance
+          console.log('instance: ', instance)
+
           // 此时出来的是element节点
-          const subTree = (instance.subTree = instance.render.call(proxy))
+          const subTree = (instance.subTree = instance.render.call(proxy, proxy))
           // vnode subTree -> patch
 
           // vnode -> element -> mountElement
@@ -383,7 +385,7 @@ export function createRenderer(options) {
             updateComponentPreRender(instance, next)
           }
           const { proxy } = instance
-          const subTree = instance.render.call(proxy)
+          const subTree = instance.render.call(proxy, proxy)
           const prevSubTree = instance.subTree
           instance.subTree = subTree
           // vnode subTree -> patch
